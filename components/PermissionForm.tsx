@@ -5,21 +5,28 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 export function PermissionForm({ value, onChange, errors }) {
   const [showBusinessUnits, setShowBusinessUnits] = useState(false)
-  const [showAreas, setShowAreas] = useState(false)
   const [showJourneys, setShowJourneys] = useState(false)
+  const [showAreas, setShowAreas] = useState(false)
   const [showAvatars, setShowAvatars] = useState(false)
 
-  const resources = ["Todos los recursos", "Journeys Map", "Submomentos", "Avatares", "Aplicaciones", "Procesos", "Iniciativas", "Areas", "Unidades de Negocio", "Gestion de Usuarios"]
+  const resourceFilters = {
+    "Todos los recursos": [],
+    "Journeys Map": ["businessUnit", "avatars"],
+    "Submomentos": ["journey", "businessUnit"],
+    "Avatares": [],
+    "Aplicaciones": ["businessUnit", "workArea"],
+    "Procesos": ["businessUnit", "workArea"],
+    "Iniciativas": ["businessUnit", "workArea"],
+    "Areas": [],
+    "Unidades de Negocio": [],
+    "Gestion de Usuarios": []
+  }
 
-  const actions = [
-    { id: "Solo lectura", label: "Solo lectura" },
-    { id: "Lectura y Escritura", label: "Lectura y Escritura" },
-    { id: "Lectura, Escritura y Eliminar", label: "Lectura, Escritura y Eliminar" },
-  ]
+  const actions = ["Solo lectura", "Lectura y Escritura", "Lectura, Escritura y Eliminar"]
 
   const businessUnits = ["Universidad Continental", "Universidad Continental América (EE.UU.)", "Postgrado"]
   const areas = ["TI", "Recursos Humanos", "Marketing"]
-  const journeys = ["Todos los journeys", "Docente pregrado", "Estudiante pregrado"]
+  const journeys = ["Docente pregrado", "Estudiante pregrado"]
   const avatars = ["Juana", "Menganito", "Fulanito"]
 
   useEffect(() => {
@@ -30,17 +37,29 @@ export function PermissionForm({ value, onChange, errors }) {
 
   const handleResourceChange = (resource) => {
     if (value.resource !== resource) {
+      // Si se selecciona "Journeys Map" se activa el filtro de Unidad de Negocio e incluye "Avatares"
+      if (resource === "Journeys Map") {
+        let currentUnits = value.businessUnit ? value.businessUnit.split(",") : []
+        if (!currentUnits.includes("Avatares")) {
+          currentUnits.push("Avatares")
+        }
+        setShowBusinessUnits(true)
+        onChange({ resource, actions: ["Solo lectura"], businessUnit: currentUnits.join(",") })
+        return
+      }
       onChange({ resource, actions: ["Solo lectura"] })
     }
   }
 
-  const handleActionChange = (actionId) => {
-    onChange({ ...value, actions: [actionId] })
+  const handleActionChange = (action) => {
+    onChange({ ...value, actions: [action] })
   }
 
   const handleBusinessUnitChange = (unit) => {
     const currentUnits = value.businessUnit ? value.businessUnit.split(",") : []
-    const updatedUnits = currentUnits.includes(unit) ? currentUnits.filter((u) => u !== unit) : [...currentUnits, unit]
+    const updatedUnits = currentUnits.includes(unit)
+      ? currentUnits.filter((u) => u !== unit)
+      : [...currentUnits, unit]
     onChange({ businessUnit: updatedUnits.join(",") })
   }
 
@@ -51,16 +70,183 @@ export function PermissionForm({ value, onChange, errors }) {
   }
 
   const handleJourneyChange = (journey) => {
-    onChange({ journey })
+    const currentJourneys = value.journey ? value.journey.split(",") : []
+    const updatedJourneys = currentJourneys.includes(journey)
+      ? currentJourneys.filter((j) => j !== journey)
+      : [...currentJourneys, journey]
+    onChange({ journey: updatedJourneys.join(",") })
   }
 
   const handleAvatarChange = (avatar) => {
     const currentAvatars = value.avatars ? value.avatars.split(",") : []
-    const updatedAvatars = currentAvatars.includes(avatar) ? currentAvatars.filter((a) => a !== avatar) : [...currentAvatars, avatar]
+    const updatedAvatars = currentAvatars.includes(avatar)
+      ? currentAvatars.filter((a) => a !== avatar)
+      : [...currentAvatars, avatar]
     onChange({ avatars: updatedAvatars.join(",") })
   }
 
-  const hasFilters = ["Iniciativas", "Aplicaciones", "Procesos", "Submomentos", "Journeys Map"].includes(value.resource)
+  const renderFilters = () => {
+    const filters = resourceFilters[value.resource] || []
+    if (filters.length === 0) return null
+
+    return (
+      <>
+        <h4 className="font-medium text-black">Aplicar el permiso si el recurso pertenece a:</h4>
+        {filters.map((filter, index) => {
+          const isLast = index === filters.length - 1
+          return (
+            <div key={filter}>
+              {filter === "businessUnit" && (
+                <div className="space-y-2">
+                  <Select
+                    value={showBusinessUnits ? "specific" : "any"}
+                    onValueChange={(val) => {
+                      setShowBusinessUnits(val === "specific")
+                      onChange({ businessUnit: val === "specific" ? "" : "Cualquier" })
+                    }}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Seleccionar Unidad de Negocio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Cualquier Unidad De Negocio</SelectItem>
+                      <SelectItem value="specific">Seleccionar específico</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showBusinessUnits && (
+                    <div className="pl-4 space-y-2">
+                      {businessUnits.map((unit) => (
+                        <div key={unit} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={unit}
+                            checked={value.businessUnit?.split(",").includes(unit)}
+                            onCheckedChange={() => handleBusinessUnitChange(unit)}
+                          />
+                          <label htmlFor={unit}>{unit}</label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {filter === "workArea" && (
+                <div className="space-y-2">
+                  <Select
+                    value={showAreas ? "specific" : "any"}
+                    onValueChange={(val) => {
+                      setShowAreas(val === "specific")
+                      onChange({ workArea: val === "specific" ? "" : "Cualquier" })
+                    }}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Seleccionar Área" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Cualquier Área</SelectItem>
+                      <SelectItem value="specific">Seleccionar específica</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showAreas && (
+                    <div className="pl-4 space-y-2">
+                      {areas.map((area) => (
+                        <div key={area} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={area}
+                            checked={value.workArea?.split(",").includes(area)}
+                            onCheckedChange={() => handleAreaChange(area)}
+                          />
+                          <label htmlFor={area}>{area}</label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {filter === "journey" && (
+                <div className="space-y-2">
+                  <Select
+                    value={showJourneys ? "specific" : "any"}
+                    onValueChange={(val) => {
+                      setShowJourneys(val === "specific")
+                      onChange({ journey: val === "specific" ? "" : "Cualquier" })
+                    }}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Seleccionar Journey" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Cualquier Journey</SelectItem>
+                      <SelectItem value="specific">Seleccionar específico</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showJourneys && (
+                    <div className="pl-4 space-y-2">
+                      {journeys.map((journey) => (
+                        <div key={journey} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={journey}
+                            checked={value.journey?.split(",").includes(journey)}
+                            onCheckedChange={() => handleJourneyChange(journey)}
+                          />
+                          <label htmlFor={journey}>{journey}</label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {filter === "avatars" && (
+                <div className="space-y-2">
+                  <Select
+                    value={showAvatars ? "specific" : "any"}
+                    onValueChange={(val) => {
+                      setShowAvatars(val === "specific")
+                      onChange({ avatars: val === "specific" ? "" : "Cualquier" })
+                    }}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Seleccionar Avatar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Cualquier Avatar</SelectItem>
+                      <SelectItem value="specific">Seleccionar específico</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showAvatars && (
+                    <div className="pl-4 space-y-2">
+                      {avatars.map((avatar) => (
+                        <div key={avatar} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={avatar}
+                            checked={value.avatars?.split(",").includes(avatar)}
+                            onCheckedChange={() => handleAvatarChange(avatar)}
+                          />
+                          <label htmlFor={avatar}>{avatar}</label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {!isLast && (
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="text-center ml-2 mt-4 font-bold text-lg">Y</div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Este permiso solo será efectivo si el recurso cumple con todos los filtros.
+                      No basta con cumplir solo uno.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )
+        })}
+      </>
+    )
+  }
 
   return (
     <TooltipProvider>
@@ -73,7 +259,7 @@ export function PermissionForm({ value, onChange, errors }) {
             <SelectValue placeholder="Seleccionar tipo de recurso" />
           </SelectTrigger>
           <SelectContent>
-            {resources.map((resource) => (
+            {Object.keys(resourceFilters).map((resource) => (
               <SelectItem key={resource} value={resource}>
                 {resource}
               </SelectItem>
@@ -92,138 +278,15 @@ export function PermissionForm({ value, onChange, errors }) {
               </SelectTrigger>
               <SelectContent>
                 {actions.map((action) => (
-                  <SelectItem key={action.id} value={action.id}>
-                    {action.label}
+                  <SelectItem key={action} value={action}>
+                    {action}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </>
         )}
-{hasFilters && (
-  <>
-    <h4 className="font-medium text-black">Aplicar el permiso si el recurso pertenece a:</h4>
-    <div className="space-y-4">
-      {/* Grupo 1: Filtro de Unidad de Negocio */}
-      <div className="space-y-2">
-        <Select
-          value={showBusinessUnits ? "specific" : "any"}
-          onValueChange={(val) => {
-            setShowBusinessUnits(val === "specific")
-            onChange({ businessUnit: val === "specific" ? "" : "Cualquier" })
-          }}
-        >
-          <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Seleccionar Unidad de Negocio" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Cualquiera Unidad De Negocio</SelectItem>
-            <SelectItem value="specific">Seleccionar específico</SelectItem>
-          </SelectContent>
-        </Select>
-        {showBusinessUnits && (
-          <div className="pl-4 space-y-2">
-            {businessUnits.map((unit) => (
-              <div key={unit} className="flex items-center space-x-2">
-                <Checkbox
-                  id={unit}
-                  checked={value.businessUnit.split(",").includes(unit)}
-                  onCheckedChange={() => handleBusinessUnitChange(unit)}
-                />
-                <label htmlFor={unit}>{unit}</label>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Si existe un segundo filtro, se muestra el separador "Y" */}
-      {(value.resource === "Journeys Map" ||
-        ["Iniciativas", "Aplicaciones", "Procesos"].includes(value.resource)) && (
-        <Tooltip>
-          <TooltipTrigger>
-            <div className="text-center ml-2 font-bold text-lg">Y</div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>
-              Este permiso solo será efectivo si el recurso cumple con todos los
-              filtros. No basta con cumplir solo uno.
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      )}
-
-      {/* Grupo 2: Filtro dependiendo del recurso */}
-      {value.resource === "Journeys Map" && (
-        <div className="space-y-2">
-          <Select
-            value={showAvatars ? "specific" : "any"}
-            onValueChange={(val) => {
-              setShowAvatars(val === "specific")
-              onChange({ avatars: val === "specific" ? "" : "cualquiera" })
-            }}
-          >
-            <SelectTrigger className="bg-white">
-              <SelectValue placeholder="Seleccionar Avatar" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Cualquier Avatar</SelectItem>
-              <SelectItem value="specific">Seleccionar específico</SelectItem>
-            </SelectContent>
-          </Select>
-          {showAvatars && (
-            <div className="pl-4 space-y-2">
-              {avatars.map((avatar) => (
-                <div key={avatar} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={avatar}
-                    checked={value.avatars?.split(",").includes(avatar)}
-                    onCheckedChange={() => handleAvatarChange(avatar)}
-                  />
-                  <label htmlFor={avatar}>{avatar}</label>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {["Iniciativas", "Aplicaciones", "Procesos"].includes(value.resource) && (
-        <div className="space-y-2">
-          <Select
-            value={showAreas ? "specific" : "any"}
-            onValueChange={(val) => {
-              setShowAreas(val === "specific")
-              onChange({ workArea: val === "specific" ? "" : "cualquiera" })
-            }}
-          >
-            <SelectTrigger className="bg-white">
-              <SelectValue placeholder="Seleccionar Área" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Cualquier Área</SelectItem>
-              <SelectItem value="specific">Seleccionar específico</SelectItem>
-            </SelectContent>
-          </Select>
-          {showAreas && (
-            <div className="pl-4 space-y-2">
-              {areas.map((area) => (
-                <div key={area} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={area}
-                    checked={value.workArea?.split(",").includes(area)}
-                    onCheckedChange={() => handleAreaChange(area)}
-                  />
-                  <label htmlFor={area}>{area}</label>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  </>
-)}
+        {renderFilters()}
       </div>
     </TooltipProvider>
   )
