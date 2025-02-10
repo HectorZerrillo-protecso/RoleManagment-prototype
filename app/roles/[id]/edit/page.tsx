@@ -6,11 +6,11 @@ import { useEffect, useState } from "react"
 
 export default function EditRole() {
   const { id } = useParams()
-  const [role, setRole] = useState(null)
+  const [role, setRole] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     const storedRoles = JSON.parse(localStorage.getItem("roles") || "[]")
-    const foundRole = storedRoles.find((r) => r.id.toString() === id)
+    const foundRole = storedRoles.find((r: any) => r.id.toString() === id)
     if (foundRole) {
       setRole(foundRole)
     }
