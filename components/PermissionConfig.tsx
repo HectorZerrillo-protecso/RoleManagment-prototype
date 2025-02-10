@@ -10,7 +10,7 @@ export function PermissionConfig({ permissions, onPermissionsChange }) {
   const [currentPermission, setCurrentPermission] = useState({
     resource: "",
     specificResource: "",
-    actions: ["read"],
+    actions: ["Solo lectura"],
     businessUnit: "",
     workArea: "",
     resourceType: "",
@@ -34,16 +34,29 @@ export function PermissionConfig({ permissions, onPermissionsChange }) {
     if (currentPermission.specificResource === "specific" && currentPermission.specificResource.split(",").length === 0) {
       newErrors.specificResource = "Debes seleccionar al menos un recurso"
     }
-
+  
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
     } else {
-      onPermissionsChange([...permissions, currentPermission])
+      let filters = ""
+      if (currentPermission.businessUnit && currentPermission.workArea) {
+        filters = `unidad de negocio: ${currentPermission.businessUnit}; areas: ${currentPermission.workArea}`
+      } else if (currentPermission.businessUnit) {
+        filters = `unidad de negocio: ${currentPermission.businessUnit}`
+      } else if (currentPermission.workArea) {
+        filters = `areas: ${currentPermission.workArea}`
+      } else {
+        filters = "ninguno"
+      }
 
+      const permissionDescription = `Permiso de: '${currentPermission.actions.join(" y ")}'; recurso: '${currentPermission.resource}', filtros: '${filters}'`
+  
+      onPermissionsChange([...permissions, { ...currentPermission, description: permissionDescription }])
+  
       setCurrentPermission({
         resource: "",
         specificResource: "",
-        actions: ["read"],
+        actions: ["Solo lectura"],
         businessUnit: "",
         workArea: "",
         resourceType: "",
@@ -68,7 +81,7 @@ export function PermissionConfig({ permissions, onPermissionsChange }) {
         <ul className="space-y-2 mb-4">
           {permissions.map((permission, index) => (
             <li key={index} className="flex justify-between items-center bg-gray-100 p-2 rounded">
-              <span>{permission.resource}</span>
+              <span>{permission.description}</span>
               <Button variant="ghost" size="sm" onClick={() => handleRemovePermission(index)}>
                 <X className="h-4 w-4" />
               </Button>

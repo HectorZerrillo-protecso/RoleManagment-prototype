@@ -7,7 +7,8 @@ import { PermissionConfig } from "./PermissionConfig"
 import { useRouter } from "next/navigation"
 
 export function RoleForm({ role }) {
-  const [name, setName] = useState(role.name)
+  const [name, setName] = useState(role.name || "")
+  const [description, setDescription] = useState(role.description || "")
   const [permissions, setPermissions] = useState(role.permissions || [])
   const [errors, setErrors] = useState({})
   const router = useRouter()
@@ -15,14 +16,16 @@ export function RoleForm({ role }) {
   const handleSave = () => {
     const newErrors = {}
     if (!name) newErrors.name = "El nombre del rol es requerido"
+    if (!description) newErrors.description = "La descripción es obligatoria"
     if (permissions.length === 0) newErrors.permissions = "Debe agregar al menos un permiso"
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
+      return
     } else {
-      const updatedRole = { ...role, name, permissions }
-      const storedRoles = JSON.parse(localStorage.getItem("roles") || "[]")
+      const updatedRole = { ...role, name, description, permissions }
       let updatedRoles
+      const storedRoles = JSON.parse(localStorage.getItem("roles") || "[]")
       if (role.id) {
         updatedRoles = storedRoles.map((r) => (r.id === role.id ? updatedRole : r))
       } else {
@@ -45,6 +48,15 @@ export function RoleForm({ role }) {
         />
         {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
       </div>
+      <div>
+        <Input
+          placeholder="Descripción del Rol"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className={errors.description ? "border-red-500" : ""}
+        />
+        {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+      </div>
       <PermissionConfig permissions={permissions} onPermissionsChange={setPermissions} />
       {errors.permissions && <p className="text-red-500 text-sm">{errors.permissions}</p>}
       <div className="flex justify-end space-x-2">
@@ -58,4 +70,3 @@ export function RoleForm({ role }) {
     </div>
   )
 }
-

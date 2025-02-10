@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { RoleList } from "./RoleList"
 import { ActiveRoles } from "./ActiveRoles"
 import { useRouter } from "next/navigation"
 
@@ -24,11 +23,21 @@ export default function RoleManagement() {
     router.push(`/roles/${role.id}/edit`)
   }
 
+  const handleDeleteRole = (role) => {
+    const confirmed = window.confirm("¿Estás seguro de eliminar este rol?")
+    if (confirmed) {
+      const updatedRoles = roles.filter((r) => r.id !== role.id)
+      setRoles(updatedRoles)
+      localStorage.setItem("roles", JSON.stringify(updatedRoles))
+    }
+  }
+
   return (
-    <>
-      <RoleList roles={roles} onEditRole={handleEditRole} onCreateRole={handleCreateRole} />
-      <ActiveRoles roles={roles} />
-    </>
+    <ActiveRoles 
+      roles={roles} 
+      onEditRole={handleEditRole} 
+      onDeleteRole={handleDeleteRole} 
+      onCreateRole={handleCreateRole} 
+    />
   )
 }
-
